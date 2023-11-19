@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model alquiler_maquinas {
+  id_alquiler          Int      @id @default(autoincrement())
+  id_reserva           Int
+  costo_hora_alquiler  Float    @db.Float
+  fecha_hora_entrega   DateTime @db.DateTime(0)
+  costo_total_alquiler Float    @db.Float
+  reservas             reservas @relation(fields: [id_reserva], references: [id_reserva], onUpdate: Restrict, map: "FK_ALQUILER_IDERESERVA")
+  multas               multas[]
+
+  @@index([id_reserva], map: "FK_ALQUILER_IDERESERVA")
+}
+
+model credenciales {
+  id_crdencial       Int        @id @default(autoincrement()) @unique
+  nombre_usuario     String     @db.Char(30) @unique
+  contrasena_usuario String     @db.Char(150)
+  usuarios           usuarios[]
+}
+
+model maquinarias {
+  id_maquinaria       Int                         @id @default(autoincrement())
+  id_usuario          Int
+  nombre_maquina      String                      @db.Char(20)
+  descripcion_maquina String                      @db.Char(100)
+  categoria           String
+  placa_maquina       String?                     @db.Char(6)
+  modelo_maquina      String?                     @db.Char(50)
+  estado_maquina      usuarios_estado_usuario     @default(A)
+  precio_hora         Float                       @db.Float
+  imagenes            imagenes[]
+  usuarios            usuarios                    @relation(fields: [id_usuario], references: [id_usuario], onUpdate: Restrict, map: "FK_MAQUINARI_IDUSUARIO")
+  reservas            reservas[]
+
+  @@index([id_usuario], map: "FK_MAQUINARI_IDUSUARIO")
+}
+
+model multas {
+  id_multa          Int               @id @default(autoincrement())
+  id_alquiler       Int
+  nombre_multa      String            @db.Char(15)
+  descripcion_multa String            @db.Char(100)
+  precio_multa      Float             @db.Float
+  alquiler_maquinas alquiler_maquinas @relation(fields: [id_alquiler], references: [id_alquiler], onUpdate: Restrict, map: "FK_MULTAS_IDALQUILER")
+
+  @@index([id_alquiler], map: "FK_MULTAS_IDALQUILER")
+}
+
+model reservas {
+  id_reserva         Int                         @id @default(autoincrement())
+  id_usuario         Int
+  id_maquinaria      Int
+  fecha_hra_inicio   DateTime                    @db.DateTime(0)
+  facha_hora_fin     DateTime                    @db.DateTime(0)
+  validacion_reserva reservas_validacion_reserva
+  alquiler_maquinas  alquiler_maquinas[]
+  maquinarias        maquinarias                 @relation(fields: [id_maquinaria], references: [id_maquinaria], onUpdate: Restrict, map: "FK_RESERVAS_IDMAQUINARIA")
+  usuarios           usuarios                    @relation(fields: [id_usuario], references: [id_usuario], onUpdate: Restrict, map: "FK_RESERVAS_IDUSUARIO")
+
+  @@index([id_maquinaria], map: "FK_RESERVAS_IDMAQUINARIA")
+  @@index([id_usuario], map: "FK_RESERVAS_IDUSUARIO")
+}
+
+model usuarios {
+  id_usuario                Int                     @default(autoincrement())
+  credenciales_id_crdencial Int                     @unique
+  nombre_usuario            String                  @db.Char(50)
+  apellido_usuario          String                  @db.Char(50)
+  tipo_documento            usuarios_tipo_documento
+  documento_usuario         String                  @db.Char(25) @unique
+  numero_celu_usuario       String     
+  correo_usuario            String                  @db.Char(60) @unique
+  tipo_usuario              usuarios_tipo_usuario
+  imagen                    String                  
+  estado_usuario            usuarios_estado_usuario @default(A)
+  maquinarias               maquinarias[]
+  reservas                  reservas[]
+  credenciales              credenciales            @relation(fields: [credenciales_id_crdencial], references: [id_crdencial], onDelete: NoAction, onUpdate: NoAction, map: "fk_usuarios_credenciales1")
+
+  @@unique([id_usuario])
+  @@id([id_usuario, credenciales_id_crdencial])
+  @@index([credenciales_id_crdencial], map: "fk_usuarios_credenciales1_idx")
+}
+
+model imagenes {
+  id_imagen       Int            @id @default(autoincrement())
+  id_maquinaria   Int
+  path            String
+  maquinarias     maquinarias    @relation(fields: [id_maquinaria], references: [id_maquinaria], onUpdate: Restrict, map: "FK_IMAGENES_IDMAQUINARIA")
+
+  @@index([id_maquinaria], map: "FK_IMAGENES_IDMAQUINARIA")
+}
+
+enum usuarios_tipo_documento {
+  CC
+  CE
+  PA
+}
+
+enum reservas_validacion_reserva {
+  P
+  R
+  A
+}
+
+enum usuarios_tipo_usuario {
+  A
+  C
+}
+
+enum usuarios_estado_usuario {
+  A
+  I
+}
